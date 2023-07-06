@@ -1,4 +1,5 @@
 import torch
+from torch.distributions.kl import register_kl, _kl_normal_normal
 import numpy as np
 
 
@@ -162,3 +163,8 @@ class DiagonalMultivariateGaussian(torch.distributions.Normal):
 
     def log_prob(self, value):
         return torch.sum(super().log_prob(value), -1)
+
+
+@register_kl(DiagonalMultivariateGaussian, DiagonalMultivariateGaussian)
+def _kl_diagonalmultivariatenormal_diagonalmultivariatenormal(p, q):
+    return torch.sum(_kl_normal_normal(p,q), -1)
