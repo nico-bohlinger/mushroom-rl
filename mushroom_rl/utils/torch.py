@@ -167,4 +167,4 @@ class DiagonalMultivariateGaussian(torch.distributions.Normal):
 
 @register_kl(DiagonalMultivariateGaussian, DiagonalMultivariateGaussian)
 def _kl_diagonalmultivariatenormal_diagonalmultivariatenormal(p, q):
-    return torch.sum(_kl_normal_normal(p,q), -1)
+    return torch.sum(_kl_normal_normal(p, q), -1)
