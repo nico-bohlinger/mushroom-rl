@@ -233,7 +233,7 @@ class GaussianTorchPolicy(TorchPolicy):
         return DiagonalMultivariateGaussian(loc=mu, scale=sigma)
 
     def get_mean_and_covariance(self, state):
-        return self._mu(state, **self._predict_params, output_tensor=True), torch.exp(2 * self._log_sigma)
+        return self._mu(state, **self._predict_params, output_tensor=True), torch.exp(self._log_sigma)
 
     def set_weights(self, weights):
         log_sigma_data = torch.from_numpy(weights[-self._action_dim:])
