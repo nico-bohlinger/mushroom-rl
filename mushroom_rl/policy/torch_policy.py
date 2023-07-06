@@ -229,10 +229,10 @@ class GaussianTorchPolicy(TorchPolicy):
         return self._action_dim / 2 * np.log(2 * np.pi * np.e) + torch.sum(self._log_sigma)
 
     def distribution_t(self, state):
-        mu, sigma = self.get_mean_and_covariance(state)
+        mu, sigma = self.get_mean_and_std(state)
         return DiagonalMultivariateGaussian(loc=mu, scale=sigma)
 
-    def get_mean_and_covariance(self, state):
+    def get_mean_and_std(self, state):
         return self._mu(state, **self._predict_params, output_tensor=True), torch.exp(self._log_sigma)
 
     def set_weights(self, weights):
