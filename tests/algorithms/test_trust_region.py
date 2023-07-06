@@ -68,7 +68,7 @@ def test_PPO():
                   n_epochs_policy=4, batch_size=64, eps_ppo=.2, lam=.95)
     policy = learn(PPO, params).policy
     w = policy.get_weights()
-    w_test = np.array([0.9378777, -1.8841006 , -0.13794397, -0.00241548])
+    w_test = np.array([0.9378786, -1.8841, -0.13794307, -0.0024151])
 
     assert np.allclose(w, w_test)
 
@@ -96,7 +96,7 @@ def test_TRPO():
                   n_epochs_cg=10, cg_damping=1e-2, cg_residual_tol=1e-10)
     policy = learn(TRPO, params).policy
     w = policy.get_weights()
-    w_test = np.array([9.5286590e-01, -1.9460459e+00, -1.2838534e-01, 8.5962377e-04])
+    w_test = np.array([9.5284063e-01, -1.9459124e+00, -1.2841016e-01,  4.2880606e-04])
 
     assert np.allclose(w, w_test)
 

@@ -6,7 +6,7 @@ import torch.nn as nn
 from mushroom_rl.policy import Policy
 from mushroom_rl.approximators import Regressor
 from mushroom_rl.approximators.parametric import TorchApproximator
-from mushroom_rl.utils.torch import to_float_tensor, CategoricalWrapper
+from mushroom_rl.utils.torch import to_float_tensor, CategoricalWrapper, DiagonalMultivariateGaussian
 from mushroom_rl.utils.parameters import to_parameter
 
 from itertools import chain
@@ -184,8 +184,7 @@ class GaussianTorchPolicy(TorchPolicy):
     deviation. The standard deviation is not state-dependent.
 
     """
-    def __init__(self, network, input_shape, output_shape, std_0=1.,
-                 use_cuda=False, **params):
+    def __init__(self, network, input_shape, output_shape, std_0=1., use_cuda=False, **params):
         """
         Constructor.
 
@@ -231,10 +230,10 @@ class GaussianTorchPolicy(TorchPolicy):
 
     def distribution_t(self, state):
         mu, sigma = self.get_mean_and_covariance(state)
-        return torch.distributions.MultivariateNormal(loc=mu, covariance_matrix=sigma)
+        return DiagonalMultivariateGaussian(loc=mu, scale=sigma)
 
     def get_mean_and_covariance(self, state):
-        return self._mu(state, **self._predict_params, output_tensor=True), torch.diag(torch.exp(2 * self._log_sigma))
+        return self._mu(state, **self._predict_params, output_tensor=True), torch.exp(2 * self._log_sigma)
 
     def set_weights(self, weights):
         log_sigma_data = torch.from_numpy(weights[-self._action_dim:])

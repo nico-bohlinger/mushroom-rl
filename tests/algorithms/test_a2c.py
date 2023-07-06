@@ -76,7 +76,7 @@ def test_a2c():
     agent = learn_a2c()
 
     w = agent.policy.get_weights()
-    w_test = np.array([0.9382279 , -1.8847059 , -0.13790752, -0.00786441])
+    w_test = np.array([0.9372178, -1.8858117, -0.13907064, -0.00887202])
 
     assert np.allclose(w, w_test)
 
@@ -92,7 +92,4 @@ def test_a2c_save(tmpdir):
     for att, method in vars(agent_save).items():
         save_attr = getattr(agent_save, att)
         load_attr = getattr(agent_load, att)
-        print('checking ', att)
-        print(save_attr, load_attr)
-
         tu.assert_eq(save_attr, load_attr)
