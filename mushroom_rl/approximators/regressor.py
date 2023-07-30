@@ -269,3 +269,16 @@ class Regressor(Serializable):
             self._logger.log_numpy(**save_dict)
 
 
+    def get_avg_loss(self):
+        losses_fit = list()
+        for i in range(len(self)):
+            model_i = self[i]
+            if hasattr(model_i, 'loss_fit'):
+                m_loss = model_i.loss_fit
+                if hasattr(m_loss, 'squeeze'):
+                    m_loss = m_loss.squeeze()
+                losses_fit.append(m_loss)
+        
+        losses_fit = np.array(losses_fit).squeeze()
+
+        return np.mean(losses_fit)

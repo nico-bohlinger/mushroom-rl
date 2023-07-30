@@ -1,3 +1,4 @@
+import numpy as np
 from tqdm import tqdm
 
 from collections import defaultdict
@@ -140,28 +141,35 @@ class Core(object):
         dataset = list()
         dataset_info = defaultdict(list)
 
-        last = True
+        lasts = np.ones(self.mdp.nr_envs, dtype=bool)
         while move_condition():
-            if last:
-                self.reset(initial_states)
+            for last in lasts:
+                if last:
+                    self.reset(initial_states)
 
-            sample, step_info = self._step(render, record)
+            samples, step_infos = self._step(render, record)
 
-            self.callback_step([sample])
+            self.callback_step([samples])
 
-            self._total_steps_counter += 1
-            self._current_steps_counter += 1
-            steps_progress_bar.update(1)
+            self._total_steps_counter += self.mdp.nr_envs
+            self._current_steps_counter += self.mdp.nr_envs
+            steps_progress_bar.update(self.mdp.nr_envs)
 
-            if sample[-1]:
-                self._total_episodes_counter += 1
-                self._current_episodes_counter += 1
-                episodes_progress_bar.update(1)
+            for i in range(self.mdp.nr_envs):
+                sample = samples[i]
+                step_info = step_infos[i]
 
-            dataset.append(sample)
+                if sample[-1]:
+                    self._total_episodes_counter += 1
+                    self._current_episodes_counter += 1
+                    episodes_progress_bar.update(1)
 
-            for key, value in step_info.items():
-                dataset_info[key].append(value)
+                dataset.append(sample)
+
+                lasts[i] = samples[i][-1]
+
+                for key, value in step_info.items():
+                    dataset_info[key].append(value)
 
             if fit_condition():
                 self.agent.fit(dataset, **dataset_info)
@@ -173,8 +181,6 @@ class Core(object):
 
                 dataset = list()
                 dataset_info = defaultdict(list)
-
-            last = sample[-1]
 
         self.agent.stop()
         self.mdp.stop()
@@ -210,14 +216,19 @@ class Core(object):
             if record:
                 self._record(frame)
 
-        last = not(
-            self._episode_steps < self.mdp.info.horizon and not absorbing)
+        last = np.logical_or(self._episode_steps >= self.mdp.info.horizon, absorbing)
 
         state = self._state
         next_state = self._preprocess(next_state.copy())
         self._state = next_state
 
-        return (state, action, reward, next_state, absorbing, last), step_info
+        samples = []
+        step_infos = []
+        for i in range(self.mdp.nr_envs):
+            samples.append((state[i], action[i], reward[i], next_state[i], absorbing[i], last[i]))
+            step_infos.append(step_info[i])
+
+        return samples, step_infos
 
     def reset(self, initial_states=None):
         """
@@ -233,7 +244,7 @@ class Core(object):
         
         self._state = self._preprocess(self.mdp.reset(initial_state).copy())
         self.agent.next_action = None
-        self._episode_steps = 0
+        self._episode_steps = np.zeros(self.mdp.nr_envs, dtype=int)
 
     def _preprocess(self, state):
         """

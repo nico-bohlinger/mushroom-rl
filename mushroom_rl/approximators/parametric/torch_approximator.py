@@ -16,7 +16,7 @@ class TorchApproximator(Serializable):
 
     """
     def __init__(self, input_shape, output_shape, network, optimizer=None,
-                 loss=None, batch_size=0, n_fit_targets=1, use_cuda=False,
+                 loss=None, batch_size=0, n_fit_targets=1, max_grad_norm=None, use_cuda=False,
                  reinitialize=False, dropout=False, quiet=True, **params):
         """
         Constructor.
@@ -51,6 +51,7 @@ class TorchApproximator(Serializable):
         self._dropout = dropout
         self._quiet = quiet
         self._n_fit_targets = n_fit_targets
+        self._max_grad_norm = max_grad_norm
 
         self.network = network(input_shape, output_shape, use_cuda=use_cuda,
                                dropout=dropout, **params)
@@ -72,6 +73,7 @@ class TorchApproximator(Serializable):
             _dropout='primitive',
             _quiet='primitive',
             _n_fit_targets='primitive',
+            _max_grad_norm='primitive',
             network='torch',
             _optimizer='torch',
             _loss='pickle',
@@ -233,6 +235,8 @@ class TorchApproximator(Serializable):
 
         self._optimizer.zero_grad()
         loss.backward()
+        if self._max_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(self.network.parameters(), self._max_grad_norm)
         self._optimizer.step()
 
         return loss.item()
