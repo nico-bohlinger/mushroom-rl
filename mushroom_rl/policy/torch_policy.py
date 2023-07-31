@@ -43,7 +43,7 @@ class TorchPolicy(Policy):
             s = to_float_tensor(np.atleast_2d(state), self._use_cuda)
             a = self.draw_action_t(s)
 
-        return torch.squeeze(a, dim=0).detach().cpu().numpy()
+        return a.detach().cpu().numpy()
 
     def distribution(self, state):
         """

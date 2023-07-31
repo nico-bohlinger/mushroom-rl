@@ -26,7 +26,7 @@ class Core(object):
         self.callbacks_fit = callbacks_fit if callbacks_fit is not None else list()
         self.callback_step = callback_step if callback_step is not None else lambda x: None
 
-        self._state = None
+        self._state = np.zeros((self.mdp.nr_envs,) + self.mdp.info.observation_space.shape)
 
         self._total_episodes_counter = 0
         self._total_steps_counter = 0
@@ -137,15 +137,19 @@ class Core(object):
         self._total_steps_counter = 0
         self._current_episodes_counter = 0
         self._current_steps_counter = 0
+        self._episode_steps = np.zeros(self.mdp.nr_envs, dtype=int)
 
-        dataset = list()
-        dataset_info = defaultdict(list)
+        datasets = [[] for _ in range(self.mdp.nr_envs)]
+        datasets_info = [defaultdict(list) for _ in range(self.mdp.nr_envs)]
 
         lasts = np.ones(self.mdp.nr_envs, dtype=bool)
         while move_condition():
-            for last in lasts:
-                if last:
-                    self.reset(initial_states)
+            reset_indices = []
+            for i in range(self.mdp.nr_envs):
+                if lasts[i]:
+                    reset_indices.append(i)
+            if len(reset_indices) > 0:
+                self.reset(reset_indices, initial_states)
 
             samples, step_infos = self._step(render, record)
 
@@ -164,23 +168,24 @@ class Core(object):
                     self._current_episodes_counter += 1
                     episodes_progress_bar.update(1)
 
-                dataset.append(sample)
+                datasets[i].append(sample)
 
                 lasts[i] = samples[i][-1]
 
                 for key, value in step_info.items():
-                    dataset_info[key].append(value)
+                    datasets_info[i][key].append(value)
 
             if fit_condition():
-                self.agent.fit(dataset, **dataset_info)
+                self.agent.fit(datasets, datasets_info)
                 self._current_episodes_counter = 0
                 self._current_steps_counter = 0
 
-                for c in self.callbacks_fit:
-                    c(dataset)
+                for dataset in datasets:
+                    for c in self.callbacks_fit:
+                        c(dataset)
 
-                dataset = list()
-                dataset_info = defaultdict(list)
+                datasets = [[] for _ in range(self.mdp.nr_envs)]
+                datasets_info = [defaultdict(list) for _ in range(self.mdp.nr_envs)]
 
         self.agent.stop()
         self.mdp.stop()
@@ -230,7 +235,7 @@ class Core(object):
 
         return samples, step_infos
 
-    def reset(self, initial_states=None):
+    def reset(self, indices, initial_states=None):
         """
         Reset the state of the agent.
 
@@ -242,9 +247,9 @@ class Core(object):
 
         self.agent.episode_start()
         
-        self._state = self._preprocess(self.mdp.reset(initial_state).copy())
+        self._state[indices] = self._preprocess(self.mdp.reset(initial_state, indices).copy())
         self.agent.next_action = None
-        self._episode_steps = np.zeros(self.mdp.nr_envs, dtype=int)
+        self._episode_steps[indices] = 0
 
     def _preprocess(self, state):
         """

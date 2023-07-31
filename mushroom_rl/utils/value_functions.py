@@ -104,3 +104,33 @@ def compute_gae(V, s, ss, r, absorbing, last, gamma, lam):
         else:
             gen_adv[k] = r[k] + gamma * v_next[k] - v[k] + gamma * lam * gen_adv[k + 1]
     return gen_adv + v, gen_adv
+
+
+def compute_gae_multi(V, s, ss, r, absorbing, last, gamma, lam):
+    """
+    Compute GAE over data from multiple environments.
+    Shape of data is (n_envs, n_samples, *shape).
+    """
+    n_envs = s.shape[0]
+    n_samples = s.shape[1]
+    
+    for env in range(n_envs):
+        v = V(s[env])
+        v_next = V(ss[env])
+        gen_adv = np.empty_like(v)
+        for rev_k in range(len(v)):
+            k = len(v) - rev_k - 1
+            if last[env, k] or rev_k == 0:
+                gen_adv[k] = r[env, k] - v[k]
+                if not absorbing[env, k]:
+                    gen_adv[k] += gamma * v_next[k]
+            else:
+                gen_adv[k] = r[env, k] + gamma * v_next[k] - v[k] + gamma * lam * gen_adv[k + 1]
+        gen_adv += v
+        if env == 0:
+            gen_adv_multi = np.zeros((n_envs, *gen_adv.shape))
+            v_target_multi = np.zeros((n_envs, *v.shape))
+        gen_adv_multi[env] = gen_adv
+        v_target_multi[env] = v
+    
+    return v_target_multi, gen_adv_multi
