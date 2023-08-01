@@ -196,7 +196,7 @@ class Core(object):
         steps_progress_bar.close()
         episodes_progress_bar.close()
 
-        return dataset, dataset_info
+        return datasets, datasets_info
 
     def _step(self, render, record):
         """
