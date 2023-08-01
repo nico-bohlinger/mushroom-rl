@@ -145,8 +145,7 @@ class MuJoCo(Environment):
         self._step_finalize()
 
         absorbing = self.is_absorbing(cur_obs)
-        reward = self.reward(self._obs, action, cur_obs, absorbing)
-        info = self._create_info_dictionary(cur_obs)
+        reward, info = self.reward_and_info(self._obs, action, cur_obs, absorbing)
 
         self._obs = cur_obs
 
