@@ -126,11 +126,10 @@ def compute_gae_multi(V, s, ss, r, absorbing, last, gamma, lam):
                     gen_adv[k] += gamma * v_next[k]
             else:
                 gen_adv[k] = r[env, k] + gamma * v_next[k] - v[k] + gamma * lam * gen_adv[k + 1]
-        gen_adv += v
         if env == 0:
             gen_adv_multi = np.zeros((n_envs, *gen_adv.shape))
             v_target_multi = np.zeros((n_envs, *v.shape))
         gen_adv_multi[env] = gen_adv
-        v_target_multi[env] = v
+        v_target_multi[env] = gen_adv + v
     
     return v_target_multi, gen_adv_multi
