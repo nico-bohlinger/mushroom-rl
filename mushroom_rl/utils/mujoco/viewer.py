@@ -201,6 +201,10 @@ class MujocoGlfwViewer:
         if key == glfw.KEY_F:
             self._run_speed_factor *= 2.0
 
+        if key == glfw.KEY_G:
+            for i in range(len(self._scene_option.geomgroup)):
+                self._scene_option.geomgroup[i] = not self._scene_option.geomgroup[i]
+
         if key == glfw.KEY_H:
             if self._hide_menu:
                 self._hide_menu = False
@@ -381,7 +385,11 @@ class MujocoGlfwViewer:
             topleft,
             "Run speed = %.3f x real time" %
             self._run_speed_factor,
-            "[S]lower, [F]aster", 
+            "[S]lower, [F]aster")
+        
+        add_overlay(
+            topleft,
+            "Press G to toggle geom groups.",
             make_new_line=False)
 
     def _set_camera(self):
