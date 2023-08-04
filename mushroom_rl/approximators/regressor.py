@@ -282,3 +282,18 @@ class Regressor(Serializable):
         losses_fit = np.array(losses_fit).squeeze()
 
         return np.mean(losses_fit)
+    
+
+    def get_avg_grad_norm(self):
+        grad_norms = list()
+        for i in range(len(self)):
+            model_i = self[i]
+            if hasattr(model_i, '_grad_norm'):
+                m_grad_norm = model_i._grad_norm
+                if hasattr(m_grad_norm, 'squeeze'):
+                    m_grad_norm = m_grad_norm.squeeze()
+                grad_norms.append(m_grad_norm)
+        
+        grad_norms = np.array(grad_norms).squeeze()
+
+        return np.mean(grad_norms)

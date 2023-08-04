@@ -77,10 +77,12 @@ class TorchApproximator(Serializable):
             network='torch',
             _optimizer='torch',
             _loss='pickle',
-            _last_loss='none'
+            _last_loss='none',
+            _grad_norm='none'
         )
 
         self._last_loss = None
+        self._grad_norm = 0.0
 
     def predict(self, *args, output_tensor=False, **kwargs):
         """
@@ -172,6 +174,7 @@ class TorchApproximator(Serializable):
         patience_count = 0
         best_loss = np.inf
         epochs_count = 0
+        self._grad_norm = 0.0
         if check_loss:
             with tqdm(total=n_epochs if n_epochs < np.inf else None,
                       dynamic_ncols=True, disable=self._quiet,
@@ -213,6 +216,10 @@ class TorchApproximator(Serializable):
 
                     self._last_loss = mean_loss_current
 
+        nr_done_epochs = epochs_count if epochs_count > 0 else n_epochs
+        nr_fits = nr_done_epochs * (len(train_args[0]) // self._batch_size)
+        self._grad_norm /= nr_fits
+
         if self._dropout:
             self.network.eval()
 
@@ -235,6 +242,11 @@ class TorchApproximator(Serializable):
 
         self._optimizer.zero_grad()
         loss.backward()
+        grad_norm = 0.0
+        for param in self.network.parameters():
+            grad_norm += param.grad.detach().data.norm(2).item() ** 2
+        grad_norm = grad_norm ** 0.5
+        self._grad_norm += grad_norm
         if self._max_grad_norm is not None:
             torch.nn.utils.clip_grad_norm_(self.network.parameters(), self._max_grad_norm)
         self._optimizer.step()
