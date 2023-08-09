@@ -123,33 +123,39 @@ class MuJoCo(Environment):
         return self._modify_observation(self._obs)
 
     def step(self, action):
-        cur_obs = self._obs.copy()
+        try:
+            cur_obs = self._obs.copy()
 
-        action = self._preprocess_action(action)
+            action = self._preprocess_action(action)
 
-        self._step_init(cur_obs, action)
+            self._step_init(cur_obs, action)
 
-        for i in range(self._n_intermediate_steps):
+            for i in range(self._n_intermediate_steps):
 
-            ctrl_action = self._compute_action(cur_obs, action)
-            self._data.ctrl[self._action_indices] = ctrl_action
+                ctrl_action = self._compute_action(cur_obs, action)
+                self._data.ctrl[self._action_indices] = ctrl_action
 
-            self._simulation_pre_step()
+                self._simulation_pre_step()
 
-            mujoco.mj_step(self._model, self._data, self._n_substeps)
+                mujoco.mj_step(self._model, self._data, self._n_substeps)
 
-            self._simulation_post_step()
+                self._simulation_post_step()
 
-            cur_obs = self._create_observation(self.obs_helper._build_obs(self._data))
+                cur_obs = self._create_observation(self.obs_helper._build_obs(self._data))
 
-        self._step_finalize()
+            self._step_finalize()
 
-        absorbing = self.is_absorbing(cur_obs)
-        reward, info = self.reward_and_info(self._obs, action, cur_obs, absorbing)
+            absorbing = self.is_absorbing(cur_obs)
+            reward, info = self.reward_and_info(self._obs, action, cur_obs, absorbing)
 
-        self._obs = cur_obs
+            self._obs = cur_obs
 
-        return self._modify_observation(cur_obs), reward, absorbing, info
+            return self._modify_observation(cur_obs), reward, absorbing, info
+        
+        except Exception as e:
+            print("Simulation exception: ", e)
+            info = {"error/simulation": 1, "t": self._current_timestep}
+            return self._modify_observation(self._obs) * 0, 0, True, info
 
     def render(self, record=False):
         if self._viewer is None:
