@@ -98,6 +98,9 @@ class MujocoGlfwViewer:
         self._overlay = {}
         self._hide_menu = hide_menu_on_startup
 
+        self._latest_info = {}
+        self._show_latest_info = False
+
     def load_new_model(self, model):
         """
         Loads a new model to the viewer, and resets the scene and context.
@@ -214,6 +217,9 @@ class MujocoGlfwViewer:
             else:
                 self._hide_menu = True
 
+        if key == glfw.KEY_L:
+            self._show_latest_info = not self._show_latest_info
+
     def scroll(self, window, x_offset, y_offset):
         """
         Scrolling callback for glfw.
@@ -253,6 +259,12 @@ class MujocoGlfwViewer:
             self._viewport.width, self._viewport.height = glfw.get_window_size(self._window)
 
             mujoco.mjr_render(self._viewport, self._scene, self._context)
+
+            if self._show_latest_info:
+                text_y = 0.9
+                for name, value in sorted(self._latest_info.items()):
+                    mujoco.mjr_text(mujoco.mjtFont.mjFONT_SHADOW, f"{name}: {value}", self._context, 0.8, text_y, 1, 1, 1)
+                    text_y -= 0.015
 
             for gridpos, [t1, t2] in self._overlay.items():
 
@@ -332,6 +344,17 @@ class MujocoGlfwViewer:
 
         glfw.destroy_window(self._window)
 
+    def add_overlay(self, gridpos, text1, text2="", make_new_line=True):
+        if gridpos not in self._overlay:
+            self._overlay[gridpos] = ["", ""]
+        if make_new_line:
+            self._overlay[gridpos][0] += text1 + "\n"
+            self._overlay[gridpos][1] += text2 + "\n"
+        else:
+            self._overlay[gridpos][0] += text1
+            self._overlay[gridpos][1] += text2
+
+
     def _create_overlay(self):
         """
         This function creates and adds all overlays used in the viewer.
@@ -343,61 +366,54 @@ class MujocoGlfwViewer:
         bottomleft = mujoco.mjtGridPos.mjGRID_BOTTOMLEFT
         bottomright = mujoco.mjtGridPos.mjGRID_BOTTOMRIGHT
 
-        def add_overlay(gridpos, text1, text2="", make_new_line=True):
-            if gridpos not in self._overlay:
-                self._overlay[gridpos] = ["", ""]
-            if make_new_line:
-                self._overlay[gridpos][0] += text1 + "\n"
-                self._overlay[gridpos][1] += text2 + "\n"
-            else:
-                self._overlay[gridpos][0] += text1
-                self._overlay[gridpos][1] += text2
-
-        add_overlay(
+        self.add_overlay(
             bottomright,
             "Framerate:",
             str(int(1/self._time_per_render * self._run_speed_factor)), make_new_line=False)
 
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Press SPACE to pause.")
 
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Press H to hide the menu.")
 
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Press TAB to switch cameras.")
 
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Press T to make the model transparent.")
 
         visualize_contact = "On" if self._scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] else "Off"
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Contact force visualization (Press C):", visualize_contact)
 
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Camera mode:",
             self._camera_mode)
         
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Run speed = %.3f x real time" %
             self._run_speed_factor,
             "[S]lower, [F]aster")
         
-        add_overlay(
+        self.add_overlay(
             topleft,
             "Press E to toggle reference frames.")
         
-        add_overlay(
+        self.add_overlay(
             topleft,
-            "Press G to toggle geom groups.",
-            make_new_line=False)
+            "Press G to toggle geom groups.")
+        
+        self.add_overlay(
+            topleft,
+            "Press L to toggle latest info.", make_new_line=False)
 
     def _set_camera(self):
         """
