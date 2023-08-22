@@ -15,7 +15,7 @@ class TorchApproximator(Serializable):
     This class supports also minibatches.
 
     """
-    def __init__(self, input_shape, output_shape, network, optimizer=None,
+    def __init__(self, input_shape, output_shape, network, optimizer=None, scheduler=None,
                  loss=None, batch_size=0, n_fit_targets=1, max_grad_norm=None, use_cuda=False,
                  reinitialize=False, dropout=False, quiet=True, **params):
         """
@@ -64,6 +64,8 @@ class TorchApproximator(Serializable):
         if optimizer is not None:
             self._optimizer = optimizer['class'](self.network.parameters(),
                                                  **optimizer['params'])
+        if scheduler is not None:
+            self._scheduler = scheduler['class'](self._optimizer, **scheduler['params'])
         self._loss = loss
 
         self._add_save_attr(
@@ -76,6 +78,7 @@ class TorchApproximator(Serializable):
             _max_grad_norm='primitive',
             network='torch',
             _optimizer='torch',
+            _scheduler='torch',
             _loss='pickle',
             _last_loss='none',
             _grad_norm='none'
@@ -250,6 +253,7 @@ class TorchApproximator(Serializable):
         if self._max_grad_norm is not None:
             torch.nn.utils.clip_grad_norm_(self.network.parameters(), self._max_grad_norm)
         self._optimizer.step()
+        self._scheduler.step()
 
         return loss.item()
 
