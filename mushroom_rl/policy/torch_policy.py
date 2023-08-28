@@ -253,6 +253,10 @@ class GaussianTorchPolicy(TorchPolicy):
     def parameters(self):
         return chain(self._mu.model.network.parameters(), [self._log_sigma])
 
+    @property
+    def log_sigma(self):
+        return self._log_sigma
+
 
 class BoltzmannTorchPolicy(TorchPolicy):
     """

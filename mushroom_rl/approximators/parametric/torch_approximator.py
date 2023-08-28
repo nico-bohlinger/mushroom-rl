@@ -369,6 +369,10 @@ class TorchApproximator(Serializable):
         return self._use_cuda
 
     @property
+    def optimizer(self):
+        return self._optimizer
+
+    @property
     def loss_fit(self):
         """
         Returns:

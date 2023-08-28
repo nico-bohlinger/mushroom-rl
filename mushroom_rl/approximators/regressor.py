@@ -297,3 +297,7 @@ class Regressor(Serializable):
         grad_norms = np.array(grad_norms).squeeze()
 
         return np.mean(grad_norms)
+
+    @property
+    def impl(self):
+        return self._impl
