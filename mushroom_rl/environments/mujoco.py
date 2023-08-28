@@ -154,7 +154,7 @@ class MuJoCo(Environment):
         
         except Exception as e:
             print("Simulation exception: ", e)
-            info = {"error/simulation": 1, "t": self._current_timestep}
+            info = {"error/simulation": 1, "t": self.current_timestep}
             return self._modify_observation(self._obs) * 0, 0, True, info
 
     def render(self, record=False):
