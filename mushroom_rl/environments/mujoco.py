@@ -122,11 +122,11 @@ class MuJoCo(Environment):
         self._obs = self._create_observation(self.obs_helper._build_obs(self._data))
         return self._modify_observation(self._obs)
 
-    def step(self, action):
+    def step(self, raw_action):
         try:
             cur_obs = self._obs.copy()
 
-            action = self._preprocess_action(action)
+            action = self._preprocess_action(raw_action)
 
             self._step_init(cur_obs, action)
 
@@ -146,7 +146,7 @@ class MuJoCo(Environment):
             self._step_finalize()
 
             absorbing = self.is_absorbing(cur_obs)
-            reward, info = self.reward_and_info(self._obs, action, cur_obs, absorbing)
+            reward, info = self.reward_and_info(self._obs, raw_action, cur_obs, absorbing)
 
             self._obs = cur_obs
 
