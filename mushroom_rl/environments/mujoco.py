@@ -325,7 +325,7 @@ class MuJoCo(Environment):
             data_buffer = self.obs_helper.get_state(self._data, data_id, otype)
             data_buffer[:] = value
 
-    def _check_collision(self, group1, group2):
+    def _check_collision(self, groups1, groups2):
         """
         Check for collision between the specified groups.
 
@@ -340,9 +340,17 @@ class MuJoCo(Environment):
             groups or not.
 
         """
-
-        ids1 = self.collision_groups[group1]
-        ids2 = self.collision_groups[group2]
+        if isinstance(groups1, list):
+            ids1 = [self.collision_groups[group] for group in groups1]
+            ids1 = set().union(*ids1)
+        else:
+            ids1 = self.collision_groups[groups1]
+        
+        if isinstance(groups2, list):
+            ids2 = [self.collision_groups[group] for group in groups2]
+            ids2 = set().union(*ids2)
+        else:
+            ids2 = self.collision_groups[groups2]
 
         for coni in range(0, self._data.ncon):
             con = self._data.contact[coni]
@@ -387,6 +395,37 @@ class MuJoCo(Environment):
                 return c_array
 
         return c_array
+    
+    def check_any_collision(self, groups):
+        if isinstance(groups, list):
+            ids = [self.collision_groups[group] for group in groups]
+            ids = set().union(*ids)
+        else:
+            ids = self.collision_groups[groups]
+
+        for con_i in range(0, self._data.ncon):
+            con = self._data.contact[con_i]
+            if con.geom1 in ids or con.geom2 in ids:
+                return True
+        
+        return False
+    
+    def check_any_collision_for_all(self, groups):
+        ids = [self.collision_groups[group] for group in groups]
+        ids = set().union(*ids)
+
+        any_collision = {idx: False for idx in ids}
+
+        for con_i in range(0, self._data.ncon):
+            con = self._data.contact[con_i]
+            if con.geom1 in ids:
+                any_collision[con.geom1] = True
+                ids.remove(con.geom1)
+            if con.geom2 in ids:
+                any_collision[con.geom2] = True
+                ids.remove(con.geom2)
+        
+        return any_collision
 
     def reward(self, obs, action, next_obs, absorbing):
         """
