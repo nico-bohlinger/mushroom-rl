@@ -9,7 +9,7 @@ class MDPInfo(Serializable):
     This class is used to store the information of the environment.
 
     """
-    def __init__(self, observation_space, action_space, gamma, horizon, dt=1e-1):
+    def __init__(self, observation_space, action_space, gamma, horizon, dt=1e-1, observation_history_length=1):
         """
         Constructor.
 
@@ -26,13 +26,15 @@ class MDPInfo(Serializable):
         self.gamma = gamma
         self.horizon = horizon
         self.dt = dt
+        self.observation_history_length = observation_history_length
 
         self._add_save_attr(
             observation_space='mushroom',
             action_space='mushroom',
             gamma='primitive',
             horizon='primitive',
-            dt='primitive'
+            dt='primitive',
+            observation_history_length='primitive'
         )
 
     @property

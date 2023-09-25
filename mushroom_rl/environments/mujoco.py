@@ -10,8 +10,8 @@ class MuJoCo(Environment):
     Class to create a Mushroom environment using the MuJoCo simulator.
     """
 
-    def __init__(self, file_name, actuation_spec, observation_spec, gamma, horizon, timestep=None, n_substeps=1,
-                 n_intermediate_steps=1, additional_data_spec=None, collision_groups=None, max_joint_vel=None,
+    def __init__(self, file_name, actuation_spec, observation_spec, gamma, horizon, observation_history_length=1,
+                 timestep=None, n_substeps=1, n_intermediate_steps=1, additional_data_spec=None, collision_groups=None, max_joint_vel=None,
                  **viewer_params):
         """
         Constructor.
@@ -103,7 +103,7 @@ class MuJoCo(Environment):
 
         # Finally, we create the MDP information and call the constructor of
         # the parent class
-        mdp_info = MDPInfo(observation_space, action_space, gamma, horizon, self.dt)
+        mdp_info = MDPInfo(observation_space, action_space, gamma, horizon, self.dt, observation_history_length)
 
         mdp_info = self._modify_mdp_info(mdp_info)
 
@@ -556,7 +556,7 @@ class MultiMuJoCo(MuJoCo):
 
     """
 
-    def __init__(self, file_names, actuation_spec, observation_spec, gamma, horizon, timestep=None,
+    def __init__(self, file_names, actuation_spec, observation_spec, gamma, horizon, observation_history_length=1, timestep=None,
                  n_substeps=1, n_intermediate_steps=1, additional_data_spec=None, collision_groups=None,
                  max_joint_vel=None, random_env_reset=True, **viewer_params):
         """
@@ -675,7 +675,7 @@ class MultiMuJoCo(MuJoCo):
 
         # Finally, we create the MDP information and call the constructor of
         # the parent class
-        mdp_info = MDPInfo(observation_space, action_space, gamma, horizon, self.dt)
+        mdp_info = MDPInfo(observation_space, action_space, gamma, horizon, self.dt, observation_history_length)
 
         mdp_info = self._modify_mdp_info(mdp_info)
 
