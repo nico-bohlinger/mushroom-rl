@@ -53,11 +53,12 @@ def parse_datasets(datasets):
     datasets_shape = (len(datasets), len(datasets[0]))
     state_shape = datasets[0][0][0].shape
     action_shape = datasets[0][0][1].shape
+    next_state_shape = datasets[0][0][3].shape
 
     state = np.ones(datasets_shape + state_shape)
     action = np.ones(datasets_shape + action_shape)
     reward = np.ones(datasets_shape)
-    next_state = np.ones(datasets_shape + state_shape)
+    next_state = np.ones(datasets_shape + next_state_shape)
     absorbing = np.ones(datasets_shape)
     last = np.ones(datasets_shape)
 

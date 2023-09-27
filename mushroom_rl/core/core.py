@@ -210,7 +210,7 @@ class Core(object):
             state, the absorbing flag of the reached state and the last step flag.
 
         """
-        action = self.agent.draw_action(self._state)
+        action, self._state = self.agent.draw_action(self._state)
         next_state, reward, absorbing, step_info = self.mdp.step(action)
 
         self._episode_steps += 1
