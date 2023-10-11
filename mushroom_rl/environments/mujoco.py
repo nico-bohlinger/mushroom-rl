@@ -1,5 +1,6 @@
 import mujoco
 import numpy as np
+from dm_control import mjcf
 from mushroom_rl.core import Environment, MDPInfo
 from mushroom_rl.utils.spaces import Box
 from mushroom_rl.utils.mujoco import *
@@ -10,15 +11,14 @@ class MuJoCo(Environment):
     Class to create a Mushroom environment using the MuJoCo simulator.
     """
 
-    def __init__(self, file_name, actuation_spec, observation_spec, gamma, horizon, observation_history_length=1,
+    def __init__(self, xml_file, actuation_spec, observation_spec, gamma, horizon, observation_history_length=1,
                  timestep=None, n_substeps=1, n_intermediate_steps=1, additional_data_spec=None, collision_groups=None, max_joint_vel=None,
                  **viewer_params):
         """
         Constructor.
 
         Args:
-             file_name (string): The path to the XML file with which the
-                environment should be created;
+             xml_file (str/xml handle): A string with a path to the xml or an Mujoco xml handle.
              actuation_spec (list): A list specifying the names of the joints
                 which should be controllable by the agent. Can be left empty
                 when all actuators should be used;
@@ -60,7 +60,7 @@ class MuJoCo(Environment):
 
         """
         # Create the simulation
-        self._model = mujoco.MjModel.from_xml_path(file_name)
+        self._model = self.load_model(xml_file)
         if timestep is not None:
             self._model.opt.timestep = timestep
             self._timestep = timestep
@@ -110,6 +110,13 @@ class MuJoCo(Environment):
         # set the warning callback to stop the simulation when a mujoco warning occurs
         mujoco.set_mju_user_warning(self.user_warning_raise_exception)
 
+        # check whether the function compute_action was overridden or not. If yes, we want to compute
+        # the action at simulation frequency, if not we do it at control frequency.
+        if type(self)._compute_action == MuJoCo._compute_action:
+            self._recompute_action_per_step = False
+        else:
+            self._recompute_action_per_step = True
+
         super().__init__(mdp_info)
 
     def seed(self, seed):
@@ -130,17 +137,24 @@ class MuJoCo(Environment):
 
             self._step_init(cur_obs, action)
 
+            ctrl_action = None
+
             for i in range(self._n_intermediate_steps):
 
-                ctrl_action = self._compute_action(cur_obs, action)
-                self._data.ctrl[self._action_indices] = ctrl_action
+                if self._recompute_action_per_step or ctrl_action is None:
+                    ctrl_action = self._compute_action(cur_obs, action)
+                    self._data.ctrl[self._action_indices] = ctrl_action
 
-                self._simulation_pre_step()
+                    self._simulation_pre_step()
 
-                mujoco.mj_step(self._model, self._data, self._n_substeps)
+                    mujoco.mj_step(self._model, self._data, self._n_substeps)
 
-                self._simulation_post_step()
+                    self._simulation_post_step()
 
+                if self._recompute_action_per_step:
+                    cur_obs = self._create_observation(self.obs_helper._build_obs(self._data))
+
+            if not self._recompute_action_per_step:
                 cur_obs = self._create_observation(self.obs_helper._build_obs(self._data))
 
             self._step_finalize()
@@ -547,6 +561,30 @@ class MuJoCo(Environment):
         else:
             raise RuntimeError('Got MuJoCo Warning: ' + warning)
 
+    @staticmethod
+    def load_model(xml_file):
+        """
+        Takes an xml_file and compiles and loads the model.
+
+        Args:
+            xml_file (str/xml handle): A string with a path to the xml or an Mujoco xml handle.
+
+        Returns:
+            Mujoco model.
+
+        """
+        if type(xml_file) == mjcf.element.RootElement:
+            # load from xml handle
+            model = mujoco.MjModel.from_xml_string(xml=xml_file.to_xml_string(),
+                                                   assets=xml_file.get_assets())
+        elif type(xml_file) == str:
+            # load from path
+            model = mujoco.MjModel.from_xml_path(xml_file)
+        else:
+            raise ValueError(f"Unsupported type for xml_file {type(xml_file)}.")
+
+        return model
+
 
 class MultiMuJoCo(MuJoCo):
     """
@@ -556,15 +594,14 @@ class MultiMuJoCo(MuJoCo):
 
     """
 
-    def __init__(self, file_names, actuation_spec, observation_spec, gamma, horizon, observation_history_length=1, timestep=None,
+    def __init__(self, xml_files, actuation_spec, observation_spec, gamma, horizon, observation_history_length=1, timestep=None,
                  n_substeps=1, n_intermediate_steps=1, additional_data_spec=None, collision_groups=None,
                  max_joint_vel=None, random_env_reset=True, **viewer_params):
         """
         Constructor.
 
         Args:
-             file_names (list): The list of paths to the XML files to create the
-                environments;
+             xml_files (str/xml handle): A list containing strings with a path to the xml or Mujoco xml handles;
              actuation_spec (list): A list specifying the names of the joints
                 which should be controllable by the agent. Can be left empty
                 when all actuators should be used;
@@ -607,9 +644,9 @@ class MultiMuJoCo(MuJoCo):
 
         """
         # Create the simulation
-        assert type(file_names)
         self._random_env_reset = random_env_reset
-        self._models = [mujoco.MjModel.from_xml_path(f) for f in file_names]
+        self._models = [self.load_model(f) for f in xml_files]
+
         self._current_model_idx = 0
         self._model = self._models[self._current_model_idx]
         if timestep is not None:
@@ -682,9 +719,12 @@ class MultiMuJoCo(MuJoCo):
         # set the warning callback to stop the simulation when a mujoco warning occurs
         mujoco.set_mju_user_warning(self.user_warning_raise_exception)
 
-        # needed for recording
-        self._record_video = False
-        self._video = None
+        # check whether the function compute_action was overridden or not. If yes, we want to compute
+        # the action at simulation frequency, if not we do it at control frequency.
+        if type(self)._compute_action == MuJoCo._compute_action:
+            self._recompute_action_per_step = False
+        else:
+            self._recompute_action_per_step = True
 
         # call grad-parent class, not MuJoCo
         super(MuJoCo, self).__init__(mdp_info)
