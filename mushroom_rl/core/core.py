@@ -144,6 +144,8 @@ class Core(object):
 
         lasts = np.ones(self.mdp.nr_envs, dtype=bool)
         while move_condition():
+            self.agent.setup_rollout()
+
             reset_indices = []
             for i in range(self.mdp.nr_envs):
                 if lasts[i]:
