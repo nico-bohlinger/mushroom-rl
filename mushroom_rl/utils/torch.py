@@ -125,6 +125,22 @@ def to_int_tensor(x, use_cuda=False):
     return x.cuda() if use_cuda else x
 
 
+def to_bool_tensor(x, use_cuda=False):
+    """
+    Function used to convert a numpy array to a float torch tensor.
+
+    Args:
+        x (np.ndarray): numpy array to be converted as torch tensor;
+        use_cuda (bool): whether to build a cuda tensors or not.
+
+    Returns:
+        A float tensor build from the values contained in the input array.
+
+    """
+    x = torch.tensor(x, dtype=torch.bool)
+    return x.cuda() if use_cuda else x
+
+
 def update_optimizer_parameters(optimizer, new_parameters):
     if len(optimizer.state) > 0:
         for p_old, p_new in zip(optimizer.param_groups[0]['params'], new_parameters):
