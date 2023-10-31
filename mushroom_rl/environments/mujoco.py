@@ -160,11 +160,12 @@ class MuJoCo(Environment):
             self._step_finalize()
 
             absorbing = self.is_absorbing(cur_obs)
-            reward, info = self.reward_and_info(self._obs, raw_action, cur_obs, absorbing)
+            modified_cur_obs = self._modify_observation(cur_obs)
+            reward, info = self.reward_and_info(self._obs, raw_action, cur_obs, modified_cur_obs, absorbing)
 
             self._obs = cur_obs
 
-            return self._modify_observation(cur_obs), reward, absorbing, info
+            return modified_cur_obs, reward, absorbing, info
         
         except Exception as e:
             print("Simulation exception: ", e)
