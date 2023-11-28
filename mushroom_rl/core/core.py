@@ -142,6 +142,8 @@ class Core(object):
         datasets = [[] for _ in range(self.mdp.nr_envs)]
         datasets_info = [defaultdict(list) for _ in range(self.mdp.nr_envs)]
 
+        self.agent.rollout_start()
+
         lasts = np.ones(self.mdp.nr_envs, dtype=bool)
         while move_condition():
             reset_indices = []
@@ -186,6 +188,8 @@ class Core(object):
 
                 datasets = [[] for _ in range(self.mdp.nr_envs)]
                 datasets_info = [defaultdict(list) for _ in range(self.mdp.nr_envs)]
+
+                self.agent.rollout_start()
 
         self.agent.stop()
         self.mdp.stop()
